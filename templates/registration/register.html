@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Register | Todo App{% endblock %}
+
+{% block content %}
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2>Create Account</h2>
+                <p>Join our Todo App to manage your tasks efficiently</p>
+            </div>
+
+            <form method="POST" class="auth-form">
+                {% csrf_token %}
+
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> Please correct the errors below.
+                    </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="id_username">Username</label>
+                    {{ form.username }}
+                    <small class="form-text text-muted">
+                        Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+                    </small>
+
+                    {% if form.username.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.username.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_email">Email</label>
+                    {{ form.email }}
+
+                    {% if form.email.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.email.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password1">Password</label>
+                    {{ form.password1 }}
+                    <small class="form-text text-muted">
+                        <ul>
+                            <li>Your password can't be too similar to your other personal information</li>
+                            <li>Your password must contain at least 8 characters</li>
+                            <li>Your password can't be a commonly used password</li>
+                            <li>Your password can't be entirely numeric</li>
+                        </ul>
+                    </small>
+
+                    {% if form.password1.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.password1.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <label for="id_password2">Confirm Password</label>
+                    {{ form.password2 }}
+
+                    {% if form.password2.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.password2.errors.0 }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block mt-2">Register</button>
+
+                <div class="auth-footer mt-3">
+                    <p class="text-center">
+                        Already have an account? <a href="{% url 'todos:login' %}">Sign In</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock content %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}

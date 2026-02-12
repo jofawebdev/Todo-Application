@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}My Tasks - Todo App{% endblock %}
+
+{% block content %}
+<div class="todo-list-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2>My Tasks</h2>
+        <div class="header-actions">
+            <a href="{% url 'todos:todo_create' %}" class="btn btn-primary">
+                <span class="btn-icon">+</span> Add New Task
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_count }}</div>
+            <div class="stat-label">Total Tasks</div>
+        </div>
+        <div class="stat-card stat-active">
+            <div class="stat-value">{{ active_count }}</div>
+            <div class="stat-label">Active</div>
+        </div>
+        <div class="stat-card stat-completed">
+            <div class="stat-value">{{ completed_count }}</div>
+            <div class="stat-label">Completed</div>
+        </div>
+        <div class="stat-card stat-overdue">
+            <div class="stat-value">{{ overdue_count }}</div>
+            <div class="stat-label">Overdue</div>
+        </div>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="filter-section">
+        <div class="filter-tabs">
+            <a href="?status=all{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" 
+               class="filter-tab {% if current_filter == 'all' %}active{% endif %}">
+                All ({{ total_count }})
+            </a>
+            <a href="?status=active{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" 
+               class="filter-tab {% if current_filter == 'active' %}active{% endif %}">
+                Active ({{ active_count }})
+            </a>
+            <a href="?status=completed{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" 
+               class="filter-tab {% if current_filter == 'completed' %}active{% endif %}">
+                Completed ({{ completed_count }})
+            </a>
+        </div>
+        
+        <div class="priority-filter">
+            <span class="filter-label">Filter by priority:</span>
+            <div class="priority-buttons">
+                {% for i in "12345" %}
+                <a href="?status={{ current_filter }}&priority={{ i }}" 
+                   class="priority-btn {% if priority_filter == i %}active{% endif %}" 
+                   data-priority="{{ i }}">
+                    {{ i }}⭐
+                </a>
+                {% endfor %}
+                {% if priority_filter %}
+                <a href="?status={{ current_filter }}" class="priority-btn clear-filter">
+                    Clear
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Todo List -->
+    <div class="todos-container">
+        {% if todos %}
+            {% for todo in todos %}
+            <div class="todo-card {% if todo.completed %}completed{% endif %} priority-{{ todo.priority }}">
+                <div class="todo-card-header">
+                    <div class="todo-priority">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= todo.priority %}
+                            <span class="priority-star">⭐</span>
+                            {% else %}
+                            <span class="priority-star empty">☆</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="todo-actions">
+                        <!-- Toggle Completion -->
+                        <form method="post" action="{% url 'todos:todo_toggle' todo.pk %}" class="inline-form">
+                            {% csrf_token %}
+                            <button type="submit" class="action-btn toggle-btn" 
+                                    title="{% if todo.completed %}Mark as active{% else %}Mark as completed{% endif %}">
+                                {% if todo.completed %}
+                                ✓
+                                {% else %}
+                                ○
+                                {% endif %}
+                            </button>
+                        </form>
+                        
+                        <!-- Edit -->
+                        <a href="{% url 'todos:todo_update' todo.pk %}" class="action-btn edit-btn" title="Edit">
+                            ✎
+                        </a>
+                        
+                        <!-- Delete -->
+                        <!-- Delete (redirects to confirmation page, never deletes directly) -->
+                        <a href="{% url 'todos:todo_delete' todo.pk %}"
+                        class="action-btn delete-btn"
+                        title="Delete">
+                            ×
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="todo-card-body">
+                    <h3 class="todo-title {% if todo.completed %}completed-text{% endif %}">
+                        {{ todo.title }}
+                    </h3>
+                    
+                    {% if todo.description %}
+                    <p class="todo-description">
+                        {{ todo.description|linebreaksbr }}
+                    </p>
+                    {% endif %}
+                </div>
+                
+                <div class="todo-card-footer">
+                    <div class="todo-meta">
+                        <span class="todo-date">
+                            Created: {{ todo.created_at|date:"M d, Y" }}
+                        </span>
+                        
+                        {% if todo.due_date %}
+                        <span class="todo-due-date {% if todo.is_overdue %}overdue{% endif %}">
+                            Due: {{ todo.due_date|date:"M d, Y" }}
+                            {% if todo.is_overdue %}
+                            <span class="overdue-badge">OVERDUE</span>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="todo-status">
+                        {% if todo.completed %}
+                        <span class="status-badge completed-badge">Completed</span>
+                        {% else %}
+                        <span class="status-badge active-badge">Active</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <div class="empty-state-icon">✓</div>
+                <h3>No tasks found</h3>
+                <p>
+                    {% if current_filter != 'all' or priority_filter %}
+                    Try changing your filters or
+                    {% endif %}
+                    <a href="{% url 'todos:todo_create' %}">create your first task</a>.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

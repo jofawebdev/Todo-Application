@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Todo App - Get Things Done{% endblock %}</title>
+
+    <!-- Favicon (inline SVG for simplicity) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✓</text></svg>">
+
+    <!-- Load static files tag -->
+    {% load static %}
+
+    <!-- Bootstrap 5 CSS (CDN) – loaded first for consistent baseline -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+          rel="stylesheet" 
+          integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" 
+          crossorigin="anonymous">
+
+    <!-- Google Fonts: Inter & Poppins for clean typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" 
+          rel="stylesheet">
+
+    <!-- Font Awesome 6 (icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS – loaded AFTER Bootstrap to allow overrides -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <!--
+        ====================================================
+        BOOTSTRAP 5 NAVBAR (fully responsive)
+        - Uses Bootstrap's native collapse for mobile menu
+        - Dropdown for authenticated user
+        - No custom JS needed – works out of the box
+        ====================================================
+    -->
+    <nav class="navbar navbar-expand-lg bg-light shadow-sm">
+        <div class="container-fluid px-4">
+            <!-- Brand / Logo -->
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'todos:todo_list' %}">
+                <span class="logo-icon fs-3 me-2">✓</span>
+                <div class="logo-text">
+                    <h1 class="h5 mb-0 fw-bold">Todo App</h1>
+                    <small class="text-muted">Productivity Simplified</small>
+                </div>
+            </a>
+
+            <!-- Mobile toggler (hamburger) – Bootstrap collapse trigger -->
+            <button class="navbar-toggler" type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#navbarMainContent" 
+                    aria-controls="navbarMainContent" 
+                    aria-expanded="false" 
+                    aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Collapsible navigation items -->
+            <div class="collapse navbar-collapse" id="navbarMainContent">
+                <!-- Primary navigation links (left side) -->
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'todo_list' %}active{% endif %}" 
+                           href="{% url 'todos:todo_list' %}">
+                            <i class="fas fa-list-check me-1"></i> All Tasks
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'todo_create' %}active{% endif %}" 
+                           href="{% url 'todos:todo_create' %}">
+                            <i class="fas fa-plus-circle me-1"></i> New Task
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- User authentication section (right side) -->
+                <ul class="navbar-nav ms-auto">
+                    {% if user.is_authenticated %}
+                        <!-- Dropdown for authenticated user -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" 
+                               href="#" 
+                               id="userDropdown" 
+                               role="button" 
+                               data-bs-toggle="dropdown" 
+                               aria-expanded="false">
+                                <!-- User avatar or fallback -->
+                                <div class="user-avatar me-2">
+                                    {% if user.profile.image %}
+                                        <img src="{{ user.profile.image.url }}" 
+                                             alt="{{ user.username }}" 
+                                             class="rounded-circle" 
+                                             width="32" height="32">
+                                    {% else %}
+                                        <span class="avatar-fallback rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" 
+                                              style="width: 32px; height: 32px;">
+                                            {{ user.username|first|upper }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                <span class="username">{{ user.username }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'todos:profile' %}">
+                                        <i class="fas fa-user me-2"></i> Profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'todos:logout' %}">
+                                        <i class="fas fa-sign-out-alt me-2"></i> Logout
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <!-- Guest navigation -->
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'todos:login' %}">
+                                <i class="fas fa-sign-in-alt me-1"></i> Login
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'todos:register' %}">
+                                <i class="fas fa-user-plus me-1"></i> Register
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!--
+        ====================================================
+        MAIN CONTENT AREA
+        - Uses Bootstrap container for consistent padding
+        - Includes Django messages display
+        ====================================================
+    -->
+    <main class="flex-grow-1">
+        <div class="container mt-4 mb-5">
+            <!-- Django messages (alerts) – styled with Bootstrap alert classes -->
+            {% if messages %}
+                <div class="messages-container">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" 
+                             role="alert">
+                            <div class="d-flex align-items-center">
+                                {% if message.tags == 'success' %}
+                                    <i class="fas fa-check-circle me-2"></i>
+                                {% elif message.tags == 'error' %}
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                {% elif message.tags == 'warning' %}
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                {% elif message.tags == 'info' %}
+                                    <i class="fas fa-info-circle me-2"></i>
+                                {% endif %}
+                                <span>{{ message }}</span>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Page-specific content block -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!--
+        ====================================================
+        FOOTER – Bootstrap flex utilities for centering
+        ====================================================
+    -->
+    <footer class="bg-light text-center py-4 mt-auto">
+        <div class="container">
+            <div class="d-flex flex-column align-items-center">
+                <!-- Small logo and tagline -->
+                <div class="d-flex align-items-center mb-2">
+                    <span class="logo-icon fs-3 me-2">✓</span>
+                    <h3 class="h5 mb-0 fw-bold">Todo App</h3>
+                </div>
+                <p class="text-muted small mb-2">Get things done, one task at a time.</p>
+                <div class="footer-links mb-2">
+                    <a href="{% url 'todos:todo_list' %}" class="text-decoration-none text-secondary mx-2">Home</a>
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'todos:profile' %}" class="text-decoration-none text-secondary mx-2">Profile</a>
+                    {% else %}
+                        <a href="{% url 'todos:login' %}" class="text-decoration-none text-secondary mx-2">Login</a>
+                        <a href="{% url 'todos:register' %}" class="text-decoration-none text-secondary mx-2">Register</a>
+                    {% endif %}
+                </div>
+                <p class="copyright text-muted small mb-0">
+                    Todo App &copy; {% now "Y" %}
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!--
+        ====================================================
+        JAVASCRIPT INCLUDES
+        - Bootstrap JS bundle (with Popper) – must be placed before custom JS
+        - Custom application script – now relies on Bootstrap for UI components
+        ====================================================
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+
+    <!-- Custom JavaScript -->
+    <script src="{% static 'js/script.js' %}"></script>
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
