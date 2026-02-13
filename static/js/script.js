@@ -6,51 +6,20 @@
  * 2. Custom todo interactions, form enhancements, and animations are preserved.
  * 3. All Bootstrap components are initialized after the DOM is ready.
  * 4. Defensive checks ensure Bootstrap is loaded before using its APIs.
+ * 
+ * FIX: Delete confirmation button now properly submits the form.
+ *      Added e.preventDefault() + this.form.submit() to prevent disabled button from blocking submission.
  */
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // --------------------------------------------------------
-    // 1. BOOTSTRAP COMPONENTS INITIALIZATION
-    // --------------------------------------------------------
-    // Use Bootstrap's built-in JavaScript for interactive elements.
-    // This requires Bootstrap JS bundle (with Popper) to be loaded.
     initBootstrapComponents();
-
-    // --------------------------------------------------------
-    // 2. CUSTOM TODO INTERACTIONS (unchanged)
-    // --------------------------------------------------------
     initTodoInteractions();
-
-    // --------------------------------------------------------
-    // 3. FORM ENHANCEMENTS (unchanged)
-    // --------------------------------------------------------
     initFormEnhancements();
-
-    // --------------------------------------------------------
-    // 4. PRIORITY FILTER FEEDBACK (unchanged)
-    // --------------------------------------------------------
     initPriorityFilter();
-
-    // --------------------------------------------------------
-    // 5. SMOOTH PAGE ANIMATIONS (unchanged)
-    // --------------------------------------------------------
     initSmoothAnimations();
-
-    // --------------------------------------------------------
-    // 6. AUTO‑HIDE MESSAGES (unchanged)
-    // --------------------------------------------------------
     autoHideMessages();
-
-    // --------------------------------------------------------
-    // 7. CONFIRMATION DIALOGS (unchanged)
-    // --------------------------------------------------------
-    initConfirmationDialogs();
-
-    // --------------------------------------------------------
-    // 8. RIPPLE EFFECT & VISUAL FEEDBACK (unchanged)
-    // --------------------------------------------------------
+    initConfirmationDialogs();   // <-- FIX applied here
     setupVisualFeedback();
     initRippleEffects();
 });
@@ -58,21 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ----------------------------------------------------------------------
 // BOOTSTRAP 5 INTEGRATION
 // ----------------------------------------------------------------------
-
-/**
- * Initialize Bootstrap JavaScript components.
- * - Tooltips:   activate via `data-bs-toggle="tooltip"` attributes.
- * - Popovers:   activate via `data-bs-toggle="popover"` (if used).
- * - Dropdowns:  automatically enabled via data attributes.
- * - Collapse:   automatically enabled via data attributes (navbar toggler).
- * 
- * NOTE: For the navbar to work correctly, your base.html MUST:
- * 1. Use Bootstrap's navbar markup (see example in comments below).
- * 2. Include Bootstrap JS bundle AFTER the CSS, ideally before </body>.
- */
 function initBootstrapComponents() {
     // ----- Tooltips -----
-    // Enable Bootstrap tooltips on elements with data-bs-toggle="tooltip"
     if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function(tooltipTriggerEl) {
@@ -83,29 +39,14 @@ function initBootstrapComponents() {
     }
 
     // ----- Popovers (optional) -----
-    // If you use popovers, uncomment the block below.
-    /*
-    if (typeof bootstrap !== 'undefined' && bootstrap.Popover) {
-        const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-        popoverTriggerList.map(function(popoverTriggerEl) {
-            return new bootstrap.Popover(popoverTriggerEl);
-        });
-    }
-    */
-
-    // ----- Dropdowns & Collapse -----
-    // Bootstrap initialises these automatically via data attributes.
-    // No extra JS is required.
+    // (commented – enable if needed)
 }
 
 // ----------------------------------------------------------------------
-// CUSTOM TODO INTERACTIONS (no Bootstrap dependency)
+// CUSTOM TODO INTERACTIONS
 // ----------------------------------------------------------------------
-
-/**
- * Enhance todo cards with hover, click feedback, and keyboard accessibility.
- */
 function initTodoInteractions() {
+    // Add hover/click feedback and keyboard accessibility to todo cards
     const todoCards = document.querySelectorAll('.todo-card');
     
     todoCards.forEach(card => {
@@ -129,6 +70,7 @@ function initTodoInteractions() {
         });
     });
     
+    // Toggle button animation (visual feedback)
     const toggleButtons = document.querySelectorAll('.toggle-btn');
     toggleButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -153,9 +95,9 @@ function initTodoInteractions() {
     });
 }
 
-/**
- * Form enhancements: auto‑focus, character counter, priority indicator.
- */
+// ----------------------------------------------------------------------
+// FORM ENHANCEMENTS
+// ----------------------------------------------------------------------
 function initFormEnhancements() {
     const forms = document.querySelectorAll('.todo-form');
     
@@ -165,6 +107,7 @@ function initFormEnhancements() {
         const prioritySelect = form.querySelector('[name="priority"]');
         const descriptionTextarea = form.querySelector('[name="description"]');
         
+        // Auto-focus title field
         if (titleInput) {
             setTimeout(() => {
                 titleInput.focus();
@@ -173,11 +116,13 @@ function initFormEnhancements() {
             }, 300);
         }
         
+        // Set min date to today for due_date
         if (dueDateInput && !dueDateInput.value) {
             const today = new Date().toISOString().split('T')[0];
             dueDateInput.min = today;
         }
         
+        // Character counter for description
         if (descriptionTextarea) {
             const charCounter = document.createElement('div');
             charCounter.className = 'char-counter';
@@ -192,6 +137,7 @@ function initFormEnhancements() {
             updateCounter();
         }
         
+        // Visual priority indicator
         if (prioritySelect) {
             prioritySelect.addEventListener('change', function() {
                 updatePriorityIndicator(this);
@@ -199,6 +145,7 @@ function initFormEnhancements() {
             updatePriorityIndicator(prioritySelect);
         }
         
+        // Form submit spinner
         form.addEventListener('submit', function(e) {
             const submitBtn = this.querySelector('button[type="submit"]');
             if (submitBtn && !submitBtn.disabled) {
@@ -207,6 +154,7 @@ function initFormEnhancements() {
                 submitBtn.disabled = true;
                 submitBtn.style.opacity = '0.8';
                 
+                // Fallback: re-enable after 5 seconds if something goes wrong
                 setTimeout(() => {
                     if (submitBtn.disabled) {
                         submitBtn.innerHTML = originalText;
@@ -219,9 +167,9 @@ function initFormEnhancements() {
     });
 }
 
-/**
- * Visual priority indicator (star rating) for the priority select.
- */
+// ----------------------------------------------------------------------
+// PRIORITY INDICATOR (stars)
+// ----------------------------------------------------------------------
 function updatePriorityIndicator(selectElement) {
     const container = selectElement.closest('.form-group');
     if (!container) return;
@@ -247,9 +195,9 @@ function updatePriorityIndicator(selectElement) {
     container.appendChild(indicator);
 }
 
-/**
- * Visual feedback for priority filter buttons.
- */
+// ----------------------------------------------------------------------
+// PRIORITY FILTER BUTTONS
+// ----------------------------------------------------------------------
 function initPriorityFilter() {
     const priorityButtons = document.querySelectorAll('.priority-btn:not(.clear-filter)');
     priorityButtons.forEach(button => {
@@ -270,9 +218,9 @@ function initPriorityFilter() {
     }
 }
 
-/**
- * Fade‑in animations for main content and stat cards.
- */
+// ----------------------------------------------------------------------
+// SMOOTH ANIMATIONS
+// ----------------------------------------------------------------------
 function initSmoothAnimations() {
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
@@ -288,36 +236,53 @@ function initSmoothAnimations() {
     });
 }
 
-/**
- * Confirmation dialogs for delete actions.
- */
+// ----------------------------------------------------------------------
+// CONFIRMATION DIALOGS (FIXED for delete confirmation)
+// ----------------------------------------------------------------------
 function initConfirmationDialogs() {
     const deleteButtons = document.querySelectorAll('.delete-btn, .btn-danger');
     
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
+            // --- CASE 1: Delete confirmation page (btn-danger inside .delete-actions) ---
             if (this.classList.contains('btn-danger') && this.closest('.delete-actions')) {
+                // 🛑 PREVENT DEFAULT – we will manually submit the form
+                e.preventDefault();
+
                 const card = this.closest('.delete-card');
                 if (card) {
                     card.style.animation = 'shake 0.5s';
                     setTimeout(() => { card.style.animation = ''; }, 500);
                 }
+
+                // Disable button and show spinner
                 this.disabled = true;
                 this.innerHTML = '<span class="spinner"></span> Deleting...';
+
+                // ✅ MANUALLY SUBMIT THE FORM – this is the FIX
+                // The form is submitted even though the button is disabled.
+                if (this.form) {
+                    this.form.submit();
+                }
+
+                // Fallback: re-enable after 2 seconds if the submission failed (e.g., network error)
                 setTimeout(() => {
                     if (this.disabled) {
                         this.disabled = false;
-                        this.textContent = 'Yes, Delete Permanently';
+                        this.innerHTML = '<span class="btn-icon">🗑️</span> Yes, Delete Permanently';
                     }
                 }, 2000);
-            } else if (this.classList.contains('delete-btn')) {
-                e.preventDefault();
+            }
+            // --- CASE 2: Delete button on todo cards (original confirmation dialog) ---
+            else if (this.classList.contains('delete-btn')) {
+                e.preventDefault();   // Stop immediate navigation
                 const todoCard = this.closest('.todo-card');
                 const todoTitle = todoCard?.querySelector('.todo-title')?.textContent || 'this task';
                 if (confirm(`Are you sure you want to delete "${todoTitle}"?`)) {
                     if (todoCard) {
                         todoCard.style.animation = 'fadeOut 0.5s ease forwards';
                     }
+                    // Navigate to the delete URL after animation
                     setTimeout(() => { window.location.href = this.href; }, 500);
                 }
             }
@@ -325,9 +290,9 @@ function initConfirmationDialogs() {
     });
 }
 
-/**
- * Auto‑hide success/info messages after 5 seconds.
- */
+// ----------------------------------------------------------------------
+// AUTO-HIDE MESSAGES
+// ----------------------------------------------------------------------
 function autoHideMessages() {
     const messages = document.querySelectorAll('.message');
     messages.forEach(message => {
@@ -344,9 +309,9 @@ function autoHideMessages() {
     });
 }
 
-/**
- * Inject CSS for visual feedback (spinner, pulse, celebrate, etc.).
- */
+// ----------------------------------------------------------------------
+// VISUAL FEEDBACK & RIPPLE EFFECTS
+// ----------------------------------------------------------------------
 function setupVisualFeedback() {
     const style = document.createElement('style');
     style.textContent = `
@@ -393,9 +358,6 @@ function setupVisualFeedback() {
     document.head.appendChild(style);
 }
 
-/**
- * Ripple effect CSS (injected once).
- */
 function initRippleEffects() {
     const rippleStyle = document.createElement('style');
     rippleStyle.textContent = `
@@ -423,7 +385,7 @@ function initRippleEffects() {
 }
 
 // ----------------------------------------------------------------------
-// UTILITY FUNCTIONS (debounce, throttle)
+// UTILITY FUNCTIONS
 // ----------------------------------------------------------------------
 function debounce(func, wait) {
     let timeout;
