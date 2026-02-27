@@ -1,6 +1,7 @@
 """
 Views for the Todo application.
 Fixed delete functionality and added user-based task ownership.
+Now includes full-text search and pagination.
 """
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth import login, authenticate, logout
@@ -11,6 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views import View
 from django.utils import timezone
+from django.db.models import Q
 from django.http import Http404
 from .models import Todo, Profile
 from .forms import TodoForm, RegisterForm, LoginForm, ProfileUpdateForm, UserUpdateForm
@@ -18,55 +20,84 @@ from .forms import TodoForm, RegisterForm, LoginForm, ProfileUpdateForm, UserUpd
 
 class TodoListView(LoginRequiredMixin, ListView):
     """
-    Display a list of todos for the logged-in user only.
+    Display a paginated list of todos for the logged-in user.
+    Supports filtering by status, priority, and full-text-search.
     """
     model = Todo
     template_name = 'todos/todo_list.html'
     context_object_name = 'todos'
+    paginate_by = 10 # Show 10 tasks per page
     
     def get_queryset(self):
-        """Return only the current user's todos."""
-        return Todo.objects.filter(user=self.request.user)
+        """
+        Return the current user's todos, filtered by search query, status (all/active/completed), and priority.
+        """
+        # Start with all todos belonging to the current user
+        queryset =  Todo.objects.filter(user=self.request.user)
+        
+        # ---------- SEARCH ----------
+        search_query = self.request.GET.get('q', '').strip()
+        if search_query:
+            # Build Q object for title and description (case-insensitive partial match)
+            q_objects = Q(title__icontains=search_query) | Q(description__icontains=search_query)
+            
+            # If the search term is a digit between 1 and 5, also match priority
+            if search_query.isdigit() and 1 <= int(search_query) <= 5:
+                q_objects |= Q(priority=int(search_query))
+                
+            queryset = queryset.filter(q_objects)
+            
+        
+        # ---------- FILTER BY STATUS ----------
+        status = self.request.GET.get('status', 'all')
+        if status == 'active':
+            queryset == queryset.filter(completed=False)
+        elif status == 'completed':
+            queryset = queryset.filter(completed=True)
+        # 'all' shows both completed and active
+        
+        # ---------- FILTER BY PRIORITY ----------
+        priority = self.request.GET.get('priority', '')
+        if priority and priority.isdigit():
+            queryset = queryset.filter(priority=int(priority))
+            
+        # Return the filtered queryset (ordering from model Meta is applied)
+        return queryset
+    
     
     def get_context_data(self, **kwargs):
-        """Add statistics and filter context."""
+        """
+        Add statistics and current filter/search values to the context.
+        """
         context = super().get_context_data(**kwargs)
         
-        # Get current user's todos
+        # Get all todos of the current user (unfiltered for stats)
         user_todos = Todo.objects.filter(user=self.request.user)
         
-        # Calculate statistics
+        # Calculate overall statistics (ignoring filters)
         total_count = user_todos.count()
         active_count = user_todos.filter(completed=False).count()
         completed_count = user_todos.filter(completed=True).count()
         overdue_count = sum(1 for todo in user_todos if todo.is_overdue())
         
-        # Get filter parameters
-        status = self.request.GET.get('status', 'all')
-        priority = self.request.GET.get('priority', '')
+        # Get current filter / search values from GET parameters
+        current_status = self.request.GET.get('status', 'all')
+        current_priority = self.request.GET.get('priority', '')
+        current_search = self.request.GET.get('q', '')
         
-        # Apply filters to queryset
-        queryset = user_todos
-        if status == 'active':
-            queryset = queryset.filter(completed=False)
-        elif status == 'completed':
-            queryset = queryset.filter(completed=True)
-        
-        if priority and priority.isdigit():
-            queryset = queryset.filter(priority=int(priority))
-        
-        # Update context
+        # Pass them to the template for use in forms and links
         context.update({
-            'todos': queryset,
             'total_count': total_count,
             'active_count': active_count,
             'completed_count': completed_count,
             'overdue_count': overdue_count,
-            'current_filter': status,
-            'priority_filter': priority,
+            'current_filter': current_status,
+            'priority_filter': current_priority,
+            'search_query': current_search,
         })
         
         return context
+        
 
 
 class TodoCreateView(LoginRequiredMixin, CreateView):

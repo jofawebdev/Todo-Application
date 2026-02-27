@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load todo_extras %}  {# Load custom template tags #}
 
 {% block title %}My Tasks - Todo App{% endblock %}
 
@@ -34,35 +35,65 @@
         </div>
     </div>
 
-    <!-- Filter Controls -->
+    <!-- SEARCH FORM -->
+    <div class="search-section">
+        <form method="get" action="." class="search-form">
+            {# Preserve existing filters as hidden inputs #}
+            <input type="hidden" name="status" value="{{ current_filter }}">
+            <input type="hidden" name="priority" value="{{ priority_filter }}">
+
+            <div class="search-wrapper">
+                <input type="text"
+                       name="q"
+                       class="search-input"
+                       placeholder="Search tasks by title, description, or priority (1-5)..."
+                       value="{{ search_query }}">
+                <button type="submit" class="search-btn">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                {% if search_query %}
+                <a href="?status={{ current_filter }}&priority={{ priority_filter }}" class="clear-search" title="Clear search">
+                    <i class="fas fa-times"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+        {% if search_query %}
+        <div class="search-indicator">
+            Showing results for: <strong>"{{ search_query }}"</strong>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- FILTER CONTROLS (Status and Priority) -->
     <div class="filter-section">
         <div class="filter-tabs">
-            <a href="?status=all{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" 
+            <a href="?{% query_transform status='all' page=1 %}"
                class="filter-tab {% if current_filter == 'all' %}active{% endif %}">
                 All ({{ total_count }})
             </a>
-            <a href="?status=active{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" 
+            <a href="?{% query_transform status='active' page=1 %}"
                class="filter-tab {% if current_filter == 'active' %}active{% endif %}">
                 Active ({{ active_count }})
             </a>
-            <a href="?status=completed{% if priority_filter %}&priority={{ priority_filter }}{% endif %}" 
+            <a href="?{% query_transform status='completed' page=1 %}"
                class="filter-tab {% if current_filter == 'completed' %}active{% endif %}">
                 Completed ({{ completed_count }})
             </a>
         </div>
-        
+
         <div class="priority-filter">
             <span class="filter-label">Filter by priority:</span>
             <div class="priority-buttons">
                 {% for i in "12345" %}
-                <a href="?status={{ current_filter }}&priority={{ i }}" 
-                   class="priority-btn {% if priority_filter == i %}active{% endif %}" 
+                <a href="?{% query_transform priority=i page=1 %}"
+                   class="priority-btn {% if priority_filter == i %}active{% endif %}"
                    data-priority="{{ i }}">
                     {{ i }}⭐
                 </a>
                 {% endfor %}
                 {% if priority_filter %}
-                <a href="?status={{ current_filter }}" class="priority-btn clear-filter">
+                <a href="?{% query_transform priority='' page=1 %}" class="priority-btn clear-filter">
                     Clear
                 </a>
                 {% endif %}
@@ -70,7 +101,7 @@
         </div>
     </div>
 
-    <!-- Todo List -->
+    <!-- TODO LIST -->
     <div class="todos-container">
         {% if todos %}
             {% for todo in todos %}
@@ -85,12 +116,12 @@
                             {% endif %}
                         {% endfor %}
                     </div>
-                    
+
                     <div class="todo-actions">
                         <!-- Toggle Completion -->
                         <form method="post" action="{% url 'todos:todo_toggle' todo.pk %}" class="inline-form">
                             {% csrf_token %}
-                            <button type="submit" class="action-btn toggle-btn" 
+                            <button type="submit" class="action-btn toggle-btn"
                                     title="{% if todo.completed %}Mark as active{% else %}Mark as completed{% endif %}">
                                 {% if todo.completed %}
                                 ✓
@@ -99,40 +130,39 @@
                                 {% endif %}
                             </button>
                         </form>
-                        
+
                         <!-- Edit -->
                         <a href="{% url 'todos:todo_update' todo.pk %}" class="action-btn edit-btn" title="Edit">
                             ✎
                         </a>
-                        
+
                         <!-- Delete -->
-                        <!-- Delete (redirects to confirmation page, never deletes directly) -->
                         <a href="{% url 'todos:todo_delete' todo.pk %}"
-                        class="action-btn delete-btn"
-                        title="Delete">
+                           class="action-btn delete-btn"
+                           title="Delete">
                             ×
                         </a>
                     </div>
                 </div>
-                
+
                 <div class="todo-card-body">
                     <h3 class="todo-title {% if todo.completed %}completed-text{% endif %}">
                         {{ todo.title }}
                     </h3>
-                    
+
                     {% if todo.description %}
                     <p class="todo-description">
                         {{ todo.description|linebreaksbr }}
                     </p>
                     {% endif %}
                 </div>
-                
+
                 <div class="todo-card-footer">
                     <div class="todo-meta">
                         <span class="todo-date">
                             Created: {{ todo.created_at|date:"M d, Y" }}
                         </span>
-                        
+
                         {% if todo.due_date %}
                         <span class="todo-due-date {% if todo.is_overdue %}overdue{% endif %}">
                             Due: {{ todo.due_date|date:"M d, Y" }}
@@ -142,7 +172,7 @@
                         </span>
                         {% endif %}
                     </div>
-                    
+
                     <div class="todo-status">
                         {% if todo.completed %}
                         <span class="status-badge completed-badge">Completed</span>
@@ -159,13 +189,36 @@
                 <div class="empty-state-icon">✓</div>
                 <h3>No tasks found</h3>
                 <p>
-                    {% if current_filter != 'all' or priority_filter %}
-                    Try changing your filters or
+                    {% if search_query or current_filter != 'all' or priority_filter %}
+                        Try adjusting your search or filters, or
                     {% endif %}
                     <a href="{% url 'todos:todo_create' %}">create your first task</a>.
                 </p>
             </div>
         {% endif %}
     </div>
+
+    <!-- PAGINATION CONTROLS -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container">
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?{% query_transform page=page_obj.previous_page_number %}" class="page-link prev">
+                &laquo; Previous
+            </a>
+            {% endif %}
+
+            <span class="current-page">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            <a href="?{% query_transform page=page_obj.next_page_number %}" class="page-link next">
+                Next &raquo;
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
