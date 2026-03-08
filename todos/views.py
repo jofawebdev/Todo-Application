@@ -26,7 +26,7 @@ class TodoListView(LoginRequiredMixin, ListView):
     model = Todo
     template_name = 'todos/todo_list.html'
     context_object_name = 'todos'
-    paginate_by = 10 # Show 10 tasks per page
+    paginate_by = 5 # Show 5 tasks per page
     
     def get_queryset(self):
         """
@@ -51,7 +51,7 @@ class TodoListView(LoginRequiredMixin, ListView):
         # ---------- FILTER BY STATUS ----------
         status = self.request.GET.get('status', 'all')
         if status == 'active':
-            queryset == queryset.filter(completed=False)
+            queryset = queryset.filter(completed=False)
         elif status == 'completed':
             queryset = queryset.filter(completed=True)
         # 'all' shows both completed and active
