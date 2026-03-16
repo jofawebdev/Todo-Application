@@ -1637,3 +1637,216 @@ html {
         justify-content: center;
     }
 }
+
+/* ====================================================
+   7.1 CATEGORY FILTER (add after .priority-filter)
+   ==================================================== */
+.category-filter {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.category-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.category-btn {
+    padding: 0.625rem 1.25rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--cat-color, var(--border-color));
+    border-radius: var(--border-radius);
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.category-btn:hover {
+    background: var(--border-color);
+    transform: translateY(-1px);
+}
+
+.category-btn.active {
+    background: var(--cat-color, var(--primary-color));
+    color: white;
+    border-color: transparent;
+    border-left-color: white;
+}
+
+/* ====================================================
+   8.1 CATEGORY BADGES (inside todo cards)
+   ==================================================== */
+.todo-categories {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-left: var(--spacing-sm);
+}
+
+.category-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    background-color: var(--cat-bg, var(--secondary-color));
+    color: var(--cat-text, white);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+}
+
+.category-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+
+/* ====================================================
+   20. CATEGORY MANAGEMENT PAGE
+   ==================================================== */
+.category-list-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Category grid – responsive cards */
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+/* Individual category card */
+.category-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    border-left: 6px solid var(--category-color, var(--secondary-color));
+    transition: all var(--transition-normal);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.category-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--category-color);
+}
+
+/* Card header with name and color swatch */
+.category-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.category-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Color swatch – a small circle showing the category color */
+.category-color {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: var(--category-color, var(--secondary-color));
+    border: 2px solid white;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Card body with statistics */
+.category-card-body {
+    padding: var(--spacing-lg);
+    flex: 1;
+}
+
+.category-stats {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+}
+
+.stat {
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    display: inline-block;
+}
+
+.view-tasks-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.view-tasks-link:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+.view-tasks-link::after {
+    content: '→';
+    transition: transform var(--transition-fast);
+}
+
+.view-tasks-link:hover::after {
+    transform: translateX(4px);
+}
+
+/* Card footer with action buttons */
+.category-card-footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+}
+
+/* Small button variant */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: var(--border-radius-sm);
+}
+
+/* Override existing empty state to fit category page */
+.category-list-container .empty-state {
+    margin-top: var(--spacing-2xl);
+}

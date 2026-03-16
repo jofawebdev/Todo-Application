@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        Edit Category - Todo App
+    {% else %}
+        New Category - Todo App
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="form-header">
+        <h2>
+            {% if form.instance.pk %}
+                Edit Category: {{ form.instance.name }}
+            {% else %}
+                Create New Category
+            {% endif %}
+        </h2>
+        <a href="{% url 'todos:category_list' %}" class="btn btn-secondary">
+            ← Back to Categories
+        </a>
+    </div>
+
+    <form method="post" class="category-form">
+        {% csrf_token %}
+
+        <!-- Form Errors -->
+        {% if form.errors %}
+        <div class="form-errors">
+            <p>Please correct the errors below:</p>
+            <ul>
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <!-- Category Name -->
+        <div class="form-group">
+            <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+            {{ form.name }}
+            {% if form.name.help_text %}
+            <div class="help-text">{{ form.name.help_text }}</div>
+            {% endif %}
+        </div>
+
+        <!-- Category Color (color picker) -->
+        <div class="form-group">
+            <label for="{{ form.color.id_for_label }}">{{ form.color.label }}</label>
+            {{ form.color }}
+            <div class="help-text">{{ form.color.help_text }}</div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                {% if form.instance.pk %}
+                    Update Category
+                {% else %}
+                    Create Category
+                {% endif %}
+            </button>
+            <a href="{% url 'todos:category_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

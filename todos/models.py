@@ -1,6 +1,7 @@
 """
 Models for the Todo application.
 Defines Todo items with user ownership and related functionality.
+Defines Categories for Task organization
 """
 from django.db import models
 from django.utils import timezone
@@ -8,6 +9,46 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User
 from django.urls import reverse
 from PIL import Image
+
+
+class Category(models.Model):
+    """
+    Category model - allows users to group their tasks.
+    Each category belongs to exactly one user.
+    """
+    name = models.CharField(
+        max_length=100,
+        verbose_name="Category Name",
+        help_text="Short, descriptive name (e.g., Work, Personal)"
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='categories',
+        verbose_name="Owner"
+    )
+    color = models.CharField(
+        max_length=7,
+        default='#007bff',
+        help_text="Hex color code for the category badge (e.g., #28a745)"
+    )
+    
+    class Meta:
+        # Ensure each user's categories have unique names
+        unique_together = ('name', 'user')
+        verbose_name = "Category"
+        verbose_name_plural = "Categories"
+        ordering = ['name']
+        
+    def __str__(self):
+        return self.name
+    
+    def get_absolute_url(self):
+        """
+        Return the URL to the category list (or detail if you prefer).
+        """
+        return reverse('todos:category_list')
+    
 
 
 class Todo(models.Model):
@@ -23,6 +64,7 @@ class Todo(models.Model):
     - due_date: Optional deadline for the task
     - created_at: Auto-set timestamp when task is created
     - updated_at: Auto-updated timestamp on modification
+    - Now includes categories (ManyToMany).
     """
     
     # Priority choices for better readability in forms and admin
@@ -87,6 +129,16 @@ class Todo(models.Model):
     # Auto-managed timestamps
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Last Updated")
+    
+    
+    # NEW: Many-to-Many relationship with Category
+    categories = models.ManyToManyField(
+        Category,
+        blank=True,
+        related_name='todos',
+        verbose_name="Categories",
+        help_text="Select one or more categories for this task"
+    )
     
     class Meta:
         """

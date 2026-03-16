@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Category - Todo App{% endblock %}
+
+{% block content %}
+<div class="delete-confirmation-container">
+    <div class="card">
+        <div class="card-header">
+            <h2>Delete Category</h2>
+        </div>
+        <div class="card-body">
+            <p class="warning-message">
+                Are you sure you want to delete the category <strong>"{{ category.name }}"</strong>?
+            </p>
+            {% if category.todos.count > 0 %}
+            <div class="alert alert-warning">
+                <strong>Warning:</strong> This category is currently used by {{ category.todos.count }} task{{ category.todos.count|pluralize }}.
+                Deleting it will remove the association from those tasks (the tasks themselves will not be deleted).
+            </div>
+            {% endif %}
+            <p>This action cannot be undone.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-danger">Yes, Delete Category</button>
+                    <a href="{% url 'todos:category_list' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

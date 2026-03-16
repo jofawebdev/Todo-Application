@@ -7,6 +7,8 @@ Following REST-style conventions:
 - Update: POST /update/<pk>/ (form at GET /update/<pk>/)
 - Delete: POST /delete/<pk>/ (confirmation at GET /delete/<pk>/)
 - Action: POST /toggle/<pk>/ (no template, redirects immediately)
+
+Now includes category management URLs
 """
 from django.urls import path
 from django.contrib.auth import views as auth_views
@@ -37,6 +39,12 @@ urlpatterns = [
     
     # Toggle completion status
     path('toggle/<int:pk>/', views.toggle_completion, name='todo_toggle'),
+    
+    # ---------- Category URLs (new) ----------
+    path('categories/', views.CategoryListView.as_view(), name='category_list'),
+    path('categories/new/', views.CategoryCreateView.as_view(), name='category_create'),
+    path('categories/<int:pk>/edit/', views.CategoryUpdateView.as_view(), name='category_update'),
+    path('categories/<int:pk>/delete/', views.CategoryDeleteView.as_view(), name='category_delete'),
     
     # User Authentication URLs
     path('register/', RegisterView.as_view(), name='register'),

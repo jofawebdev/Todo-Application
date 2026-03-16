@@ -65,6 +65,21 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- NEW: Categories field (rendered as checkboxes) -->
+        <div class="form-group">
+            <label>{{ form.categories.label }}</label>
+            <div class="categories-checkbox-group">
+                {{ form.categories }}
+            </div>
+            {% if form.categories.help_text %}
+            <div class="help-text">{{ form.categories.help_text }}</div>
+            {% endif %}
+            <!-- Link to manage categories if user needs to create new ones -->
+            <small>
+                <a href="{% url 'todos:category_list' %}" target="_blank">Manage categories</a> (opens in new tab)
+            </small>
+        </div>
         
         <!-- Form Actions -->
         <div class="form-actions">

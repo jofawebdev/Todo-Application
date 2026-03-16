@@ -1,21 +1,25 @@
 {% extends 'base.html' %}
-{% load todo_extras %}  {# Load custom template tags #}
+{% load todo_extras %}  {# Load custom template tags for text_color and query_transform #}
 
 {% block title %}My Tasks - Todo App{% endblock %}
 
 {% block content %}
 <div class="todo-list-container">
-    <!-- Page Header -->
+    <!-- ==================== PAGE HEADER ==================== -->
     <div class="page-header">
         <h2>My Tasks</h2>
         <div class="header-actions">
             <a href="{% url 'todos:todo_create' %}" class="btn btn-primary">
                 <span class="btn-icon">+</span> Add New Task
             </a>
+            <!-- Button to manage categories (new feature) -->
+            <a href="{% url 'todos:category_list' %}" class="btn btn-secondary">
+                <span class="btn-icon">🏷️</span> Manage Categories
+            </a>
         </div>
     </div>
 
-    <!-- Stats Overview -->
+    <!-- ==================== STATS OVERVIEW ==================== -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-value">{{ total_count }}</div>
@@ -35,12 +39,13 @@
         </div>
     </div>
 
-    <!-- SEARCH FORM -->
+    <!-- ==================== SEARCH FORM ==================== -->
     <div class="search-section">
         <form method="get" action="." class="search-form">
             {# Preserve existing filters as hidden inputs #}
             <input type="hidden" name="status" value="{{ current_filter }}">
             <input type="hidden" name="priority" value="{{ priority_filter }}">
+            <input type="hidden" name="category" value="{{ current_category }}">
 
             <div class="search-wrapper">
                 <input type="text"
@@ -52,7 +57,7 @@
                     <i class="fas fa-search"></i> Search
                 </button>
                 {% if search_query %}
-                <a href="?status={{ current_filter }}&priority={{ priority_filter }}" class="clear-search" title="Clear search">
+                <a href="?status={{ current_filter }}&priority={{ priority_filter }}&category={{ current_category }}" class="clear-search" title="Clear search">
                     <i class="fas fa-times"></i>
                 </a>
                 {% endif %}
@@ -65,8 +70,9 @@
         {% endif %}
     </div>
 
-    <!-- FILTER CONTROLS (Status and Priority) -->
+    <!-- ==================== FILTER CONTROLS ==================== -->
     <div class="filter-section">
+        <!-- Status filter tabs -->
         <div class="filter-tabs">
             <a href="?{% query_transform status='all' page=1 %}"
                class="filter-tab {% if current_filter == 'all' %}active{% endif %}">
@@ -82,6 +88,7 @@
             </a>
         </div>
 
+        <!-- Priority filter buttons -->
         <div class="priority-filter">
             <span class="filter-label">Filter by priority:</span>
             <div class="priority-buttons">
@@ -99,13 +106,33 @@
                 {% endif %}
             </div>
         </div>
+
+        <!-- Category filter buttons (dynamic colors via CSS variable) -->
+        <div class="category-filter">
+            <span class="filter-label">Filter by category:</span>
+            <div class="category-buttons">
+                <a href="?{% query_transform category='' page=1 %}"
+                   class="category-btn {% if not current_category %}active{% endif %}">
+                    All
+                </a>
+                {% for cat in categories %}
+                {# Use CSS variable --cat-color to apply the category color border #}
+                <a href="?{% query_transform category=cat.id page=1 %}"
+                   class="category-btn {% if current_category|stringformat:'s' == cat.id|stringformat:'s' %}active{% endif %}"
+                   style="--cat-color: {{ cat.color }};">
+                    {{ cat.name }} ({{ cat.active_count }})
+                </a>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
-    <!-- TODO LIST -->
+    <!-- ==================== TASK LIST ==================== -->
     <div class="todos-container">
         {% if todos %}
             {% for todo in todos %}
             <div class="todo-card {% if todo.completed %}completed{% endif %} priority-{{ todo.priority }}">
+                <!-- Card Header: Priority stars, category badges, action buttons -->
                 <div class="todo-card-header">
                     <div class="todo-priority">
                         {% for i in "12345" %}
@@ -117,8 +144,19 @@
                         {% endfor %}
                     </div>
 
+                    <!-- Category badges with dynamic background and text colors -->
+                    <div class="todo-categories">
+                        {% for cat in todo.categories.all %}
+                        {# Set CSS variables for background and computed text color #}
+                        <span class="category-badge"
+                              style="--cat-bg: {{ cat.color }}; --cat-text: {{ cat.color|text_color }};">
+                            {{ cat.name }}
+                        </span>
+                        {% endfor %}
+                    </div>
+
                     <div class="todo-actions">
-                        <!-- Toggle Completion -->
+                        <!-- Toggle completion form -->
                         <form method="post" action="{% url 'todos:todo_toggle' todo.pk %}" class="inline-form">
                             {% csrf_token %}
                             <button type="submit" class="action-btn toggle-btn"
@@ -131,20 +169,21 @@
                             </button>
                         </form>
 
-                        <!-- Edit -->
+                        <!-- Edit link -->
                         <a href="{% url 'todos:todo_update' todo.pk %}" class="action-btn edit-btn" title="Edit">
                             ✎
                         </a>
 
-                        <!-- Delete -->
+                        <!-- Delete link -->
                         <a href="{% url 'todos:todo_delete' todo.pk %}"
                            class="action-btn delete-btn"
                            title="Delete">
-                            ×
+                            x
                         </a>
                     </div>
                 </div>
 
+                <!-- Card Body: Title and description -->
                 <div class="todo-card-body">
                     <h3 class="todo-title {% if todo.completed %}completed-text{% endif %}">
                         {{ todo.title }}
@@ -157,6 +196,7 @@
                     {% endif %}
                 </div>
 
+                <!-- Card Footer: Metadata and status badge -->
                 <div class="todo-card-footer">
                     <div class="todo-meta">
                         <span class="todo-date">
@@ -184,12 +224,12 @@
             </div>
             {% endfor %}
         {% else %}
-            <!-- Empty State -->
+            <!-- Empty state when no tasks match the current filters/search -->
             <div class="empty-state">
                 <div class="empty-state-icon">✓</div>
                 <h3>No tasks found</h3>
                 <p>
-                    {% if search_query or current_filter != 'all' or priority_filter %}
+                    {% if search_query or current_filter != 'all' or priority_filter or current_category %}
                         Try adjusting your search or filters, or
                     {% endif %}
                     <a href="{% url 'todos:todo_create' %}">create your first task</a>.
@@ -198,7 +238,7 @@
         {% endif %}
     </div>
 
-    <!-- PAGINATION CONTROLS -->
+    <!-- ==================== PAGINATION ==================== -->
     {% if page_obj.has_other_pages %}
     <div class="pagination-container">
         <div class="pagination">

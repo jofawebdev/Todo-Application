@@ -2,6 +2,7 @@
 Views for the Todo application.
 Fixed delete functionality and added user-based task ownership.
 Now includes full-text search and pagination.
+Now includes category management and category filtering for tasks.
 """
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.contrib.auth import login, authenticate, logout
@@ -14,14 +15,93 @@ from django.views import View
 from django.utils import timezone
 from django.db.models import Q
 from django.http import Http404
-from .models import Todo, Profile
-from .forms import TodoForm, RegisterForm, LoginForm, ProfileUpdateForm, UserUpdateForm
+from .models import Todo, Profile, Category
+from .forms import TodoForm, RegisterForm, LoginForm, ProfileUpdateForm, UserUpdateForm, CategoryForm
 
+
+# ---------- Category CRUD (new) ----------
+class CategoryListView(LoginRequiredMixin, ListView):
+    """
+    Display all categories belonging to the current user.
+    """
+    model = Category
+    template_name = 'todos/category_list.html'
+    context_object_name = 'categories'
+    
+    def get_queryset(self):
+        # Only return categories owned by the logged-in user
+        return Category.objects.filter(user=self.request.user).order_by('name')
+    
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Optionally add a count of todos per category
+        categories = context['categories']
+        for cat in categories:
+            cat.todo_count = cat.todos.count()
+        return context
+    
+    
+class CategoryCreateView(LoginRequiredMixin, CreateView):
+    """
+    Create a new category for the current user.
+    """
+    model = Category
+    form_class = CategoryForm
+    template_name = 'todos/category_form.html'
+    success_url = reverse_lazy('todos:category_list')
+    
+    def form_valid(self, form):
+        # Assign the logged-in user to the category
+        form.instance.user = self.request.user
+        response = super().form_valid(form)
+        messages.success(self.request, f'Category "{self.object.name}" created.')
+        return response
+    
+
+class CategoryUpdateView(LoginRequiredMixin, UpdateView):
+    """
+    Update an existing category (only if owned by the user).
+    """
+    model = Category
+    form_class = CategoryForm
+    template_name = 'todos/category_form.html'
+    success_url = reverse_lazy('todos:category_list')
+    
+    def get_queryset(self):
+        # Ensure the user can only edit their own categories
+        return Category.objects.filter(user=self.request.user)
+    
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, f'Category "{self.object.name}" updated.')
+        return response
+    
+
+class CategoryDeleteView(LoginRequiredMixin, DeleteView):
+    """
+    Delete a category (only if owned by the user).
+    """
+    model = Category
+    template_name = 'todos/category_confirm_delete.html'
+    success_url = reverse_lazy('todos:category_list')
+    context_object_name = 'category'
+    
+    def get_queryset(self):
+        return Category.objects.filter(user=self.request.user)
+    
+    def delete(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        category_name = self.object.name
+        self.object.delete()
+        messages.success(request, f'Category "{category_name}" deleted.')
+        return redirect(self.success_url)
+    
 
 class TodoListView(LoginRequiredMixin, ListView):
     """
     Display a paginated list of todos for the logged-in user.
-    Supports filtering by status, priority, and full-text-search.
+    Supports filtering by status, priority, full-text-search, and now category.
     """
     model = Todo
     template_name = 'todos/todo_list.html'
@@ -61,6 +141,11 @@ class TodoListView(LoginRequiredMixin, ListView):
         if priority and priority.isdigit():
             queryset = queryset.filter(priority=int(priority))
             
+        # NEW: Category filter
+        category_id = self.request.GET.get('category')
+        if category_id and category_id.isdigit():
+            queryset = queryset.filter(categories__id=int(category_id))
+            
         # Return the filtered queryset (ordering from model Meta is applied)
         return queryset
     
@@ -84,6 +169,14 @@ class TodoListView(LoginRequiredMixin, ListView):
         current_status = self.request.GET.get('status', 'all')
         current_priority = self.request.GET.get('priority', '')
         current_search = self.request.GET.get('q', '')
+        current_category = self.request.GET.get('category', '')
+        
+        # NEW: Provide a list of all user categories (for sidebar/dropdown)
+        categories = Category.objects.filter(user=self.request.user).order_by('name')
+        
+        # Annotate each category with a count of active (incomplete) tasks? Optional
+        for cat in categories:
+            cat.active_count = cat.todos.filter(completed=False).count()
         
         # Pass them to the template for use in forms and links
         context.update({
@@ -94,6 +187,8 @@ class TodoListView(LoginRequiredMixin, ListView):
             'current_filter': current_status,
             'priority_filter': current_priority,
             'search_query': current_search,
+            'current_category': current_category,
+            'categories': categories  # For the filter sidebar 
         })
         
         return context
@@ -108,6 +203,14 @@ class TodoCreateView(LoginRequiredMixin, CreateView):
     form_class = TodoForm
     template_name = 'todos/todo_form.html'
     success_url = reverse_lazy('todos:todo_list')
+    
+    def get_form_kwargs(self):
+        """
+        Pass the current user to the form so it can filter the categories queryset
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
     
     def form_valid(self, form):
         """Set the current user as the todo owner before saving."""
@@ -137,6 +240,11 @@ class TodoUpdateView(LoginRequiredMixin, UpdateView):
     def get_queryset(self):
         """Only allow users to update their own todos."""
         return Todo.objects.filter(user=self.request.user)
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
     
     def get_success_url(self):
         """Redirect to list view after successful update."""

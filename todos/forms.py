@@ -3,7 +3,40 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from .models import Todo, Profile
+from .models import Todo, Profile, Category # Added category
+
+
+class CategoryForm(forms.ModelForm):
+    """
+    Form for creating and editing categories
+    The user is not a field on the form; it is set in the view.
+    """
+    class Meta:
+        model = Category
+        fields = ['name', 'color']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g., Work',
+                'autofocus': True
+            }),
+            'color': forms.TextInput(attrs={
+                'type': 'color',           # HTML5 color picker
+                'class': 'form-control form-control-color',
+                'style': 'width: 100px;'
+            }),
+        }
+        labels = {
+            'name': 'Category Name',
+            'color': 'Badge Color',
+        }
+        
+    def clean_name(self):
+        name = self.cleaned_data.get('name').strip()
+        if len(name) < 2:
+            raise ValidationError("Category name must be at least 2 characters.")
+        return name
+
 
 class TodoForm(forms.ModelForm):
     """
@@ -12,11 +45,12 @@ class TodoForm(forms.ModelForm):
     - Custom widgets for better UX
     - Clean validation for due dates
     - Priority display with stars
+    - Now includes a categories field limited to the current user's categories
     """
     
     class Meta:
         model = Todo
-        fields = ['title', 'description', 'priority', 'due_date']
+        fields = ['title', 'description', 'priority', 'due_date', 'categories']
         
         # Custom widgets for better user experience
         widgets = {
@@ -38,6 +72,8 @@ class TodoForm(forms.ModelForm):
                 'class': 'form-date',
                 'min': timezone.now().date().isoformat(), # Prevent past dates
             }),
+            # Use checkboxes for categories - we'll set the queryset in __init__
+            'categories': forms.CheckboxSelectMultiple(),
         }
         
         # Custom labels and help texts
@@ -46,7 +82,26 @@ class TodoForm(forms.ModelForm):
             'description': 'Details',
             'priority': 'Priority Level',
             'due_date': 'Due Date',
+            'categories': 'Assign Categories',
         }
+        
+    def __init__(self, *args, **kwargs):
+        """
+        Pop the 'user' keyword argument and use it to limit the categories queryset.
+        """
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if user:
+            # Only show categories that belong to this user
+            self.fields['categories'].queryset = Category.objects.filter(user=user)
+        else:
+            # Fallback: empty queryset (should not happen when used in views)
+            self.fields['categories'].queryset = Category.objects.none()
+            
+        # Make categories optional
+        self.fields['categories'].required = False
+        
         
     def clean_due_date(self):
         """

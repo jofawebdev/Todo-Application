@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load todo_extras %}  {# Load custom template tags (for future use if needed) #}
+
+{% block title %}Manage Categories - Todo App{% endblock %}
+
+{% block content %}
+<div class="category-list-container">
+    <!-- ==================== PAGE HEADER ==================== -->
+    <div class="page-header">
+        <h2>My Categories</h2>
+        <div class="header-actions">
+            <a href="{% url 'todos:category_create' %}" class="btn btn-primary">
+                <span class="btn-icon">+</span> New Category
+            </a>
+            <a href="{% url 'todos:todo_list' %}" class="btn btn-secondary">
+                ← Back to Tasks
+            </a>
+        </div>
+    </div>
+
+    <!-- ==================== CATEGORY GRID ==================== -->
+    {% if categories %}
+        <div class="category-grid">
+            {% for category in categories %}
+            {# Use CSS variable --category-color for dynamic border and color swatch #}
+            <div class="category-card" style="--category-color: {{ category.color }};">
+                <div class="category-card-header">
+                    <h3 class="category-name">{{ category.name }}</h3>
+                    <span class="category-color" style="--category-color: {{ category.color }};"></span>
+                </div>
+                <div class="category-card-body">
+                    <p class="category-stats">
+                        <span class="stat">{{ category.todo_count }} task{{ category.todo_count|pluralize }}</span>
+                        {% if category.todo_count > 0 %}
+                        <a href="{% url 'todos:todo_list' %}?category={{ category.id }}" class="view-tasks-link">View tasks</a>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="category-card-footer">
+                    <a href="{% url 'todos:category_update' category.pk %}" class="btn btn-sm btn-primary">Edit</a>
+                    <a href="{% url 'todos:category_delete' category.pk %}" class="btn btn-sm btn-danger">Delete</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- ==================== EMPTY STATE ==================== -->
+        <div class="empty-state">
+            <div class="empty-state-icon">🏷️</div>
+            <h3>No categories yet</h3>
+            <p>Categories help you organize your tasks. Create your first category to get started.</p>
+            <a href="{% url 'todos:category_create' %}" class="btn btn-primary">Create Category</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

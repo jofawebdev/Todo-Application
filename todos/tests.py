@@ -49,7 +49,7 @@ class TodoSearchPaginationTests(TestCase):
     def test_pagination(self):
         response = self.client.get(reverse('todos:todo_list'), {'page': 1})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['todos']), 10)  # paginate_by=10
+        self.assertEqual(len(response.context['todos']), 5)  # paginate_by=5
 
         response = self.client.get(reverse('todos:todo_list'), {'page': 2})
         self.assertEqual(len(response.context['todos']), 5)   # remaining 5
