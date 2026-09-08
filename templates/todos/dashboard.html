@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard - Todo App{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Task Dashboard</h1>
+
+    <!-- Stats Cards with gutter spacing -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-white bg-primary h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Total Tasks</h5>
+                    <h2 class="card-text">{{ data.total_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-white bg-warning h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Active</h5>
+                    <h2 class="card-text">{{ data.active_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-white bg-success h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Completed</h5>
+                    <h2 class="card-text">{{ data.completed_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card text-white bg-danger h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Overdue</h5>
+                    <h2 class="card-text">{{ data.overdue_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Priority Distribution</div>
+                <div class="card-body">
+                    <canvas id="priorityChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">Tasks per Category</div>
+                <div class="card-body">
+                    <canvas id="categoryChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upcoming Tasks -->
+    <div class="card">
+        <div class="card-header">Upcoming Tasks (Next 5)</div>
+        <div class="card-body">
+            {% if data.upcoming_tasks %}
+                <ul class="list-group">
+                    {% for task in data.upcoming_tasks %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ task.title }}</strong>
+                                <span class="badge bg-secondary ms-2">
+                                    Due: {{ task.due_date|date:"M d, Y"|default:"No date" }}
+                                </span>
+                            </div>
+                            <span class="badge bg-{% if task.priority >= 4 %}danger{% elif task.priority == 3 %}warning{% else %}info{% endif %}">
+                                Priority {{ task.priority }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted">No upcoming tasks. Great job!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Embed all chart data as a JSON script (safe from XSS) -->
+{{ data|json_script:"dashboard-data" }}
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- External dashboard JavaScript -->
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}

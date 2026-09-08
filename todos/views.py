@@ -455,3 +455,82 @@ def profile(request):
     }
     
     return render(request, 'registration/profile.html', context)
+
+
+# ---------- Dashboard View ----------
+class DashboardView(LoginRequiredMixin, View):
+    """
+    Display a dashboard with task statistics and charts.
+    All data is passed as a single JSON-serializable object.
+    """
+    template_name = 'todos/dashboard.html'
+
+    def get(self, request, *args, **kwargs):
+        # Get all todos for the current user
+        user_todos = Todo.objects.filter(user=request.user)
+        today = timezone.now().date()
+
+        # Basic counts
+        total_count = user_todos.count()
+        active_count = user_todos.filter(completed=False).count()
+        completed_count = user_todos.filter(completed=True).count()
+        overdue_count = user_todos.filter(completed=False, due_date__lt=today).count()
+
+        # Priority distribution (1–5)
+        priority_counts = {i: user_todos.filter(priority=i).count() for i in range(1, 6)}
+        priority_labels = ['Very Low', 'Low', 'Medium', 'High', 'Critical']
+        priority_colors = [
+            'rgba(0,123,255,0.6)',   # Very Low
+            'rgba(40,167,69,0.6)',   # Low
+            'rgba(255,193,7,0.6)',   # Medium
+            'rgba(253,126,20,0.6)',  # High
+            'rgba(220,53,69,0.6)'    # Critical
+        ]
+        priority_border = [
+            'rgba(0,123,255,1)',
+            'rgba(40,167,69,1)',
+            'rgba(255,193,7,1)',
+            'rgba(253,126,20,1)',
+            'rgba(220,53,69,1)'
+        ]
+
+        # Category distribution
+        categories = Category.objects.filter(user=request.user)
+        cat_labels = [cat.name for cat in categories]
+        cat_counts = [cat.todos.filter(user=request.user).count() for cat in categories]
+        cat_colors = [cat.color for cat in categories]
+
+        # Upcoming tasks (next 5 by due date)
+        upcoming_tasks = user_todos.filter(
+            completed=False,
+            due_date__gte=today
+        ).order_by('due_date', 'priority')[:5]
+
+        # Build a single data structure for JSON serialization
+        data = {
+            'total_count': total_count,
+            'active_count': active_count,
+            'completed_count': completed_count,
+            'overdue_count': overdue_count,
+            'priority': {
+                'labels': priority_labels,
+                'counts': [priority_counts[i] for i in range(1, 6)],
+                'colors': priority_colors,
+                'borderColors': priority_border,
+            },
+            'category': {
+                'labels': cat_labels,
+                'counts': cat_counts,
+                'colors': cat_colors,
+            },
+            'upcoming_tasks': [
+                {
+                    'title': t.title,
+                    'due_date': t.due_date.isoformat() if t.due_date else None,
+                    'priority': t.priority,
+                }
+                for t in upcoming_tasks
+            ],
+        }
+
+        return render(request, self.template_name, {'data': data})

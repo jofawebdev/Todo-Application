@@ -82,6 +82,9 @@ urlpatterns = [
              template_name='registration/password_reset_complete.html'
          ), 
          name='password_reset_complete'),
+    
+    # Dashboard URL
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
 ]
 
 # Serve media files in development
